@@ -13,7 +13,7 @@ model User {
   email     String   @unique
   name      String   @db.VarChar(255)
   password  String?
-  role  RoleEnumType? @default(Student)
+  role  RoleEnumType? @default(student)
   loginAttempts Int @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -24,6 +24,6 @@ model User {
 }
 
 enum RoleEnumType {
-  Student
-  Teacher
+  student
+  teacher
 }

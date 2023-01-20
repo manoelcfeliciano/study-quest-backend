@@ -2,10 +2,19 @@ version: '3'
 
 services:
   db:
-    image: postgresql
+    image: postgres
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: pass123
+      POSTGRES_DB: study-quest
     ports:
       - '5432:5432'
+  pg-admin:
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.admin
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - '80:80'

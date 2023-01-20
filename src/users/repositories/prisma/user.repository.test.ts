@@ -1,19 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from 'src/common/db/prisma/prisma.service';
 import { clear } from 'src/common/db/prisma/test.utils';
-import { UserEntity } from 'src/users/entities/user.entity';
-import { PrismaUserMapper } from 'src/users/mappers/prisma/user.mapper';
+import { PrismaUserDomainMapper } from 'src/users/mappers/prisma/user-domain.mapper';
 import { makeFakeUser } from 'src/users/test/mocks/entities/fake-user.entity';
 import { PrismaUserRepository } from './user.repository';
+import { UpdateUserDto } from '../../dto/update-user.dto';
+import { CreateUserDto } from '../../dto/create-user.dto';
 
 const prismaService = new PrismaService();
+const prismaUserMapper = new PrismaUserDomainMapper();
 
 describe('PrismaUserRepository', () => {
   let sut: PrismaUserRepository;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [PrismaUserRepository, PrismaUserMapper, PrismaService],
+      providers: [PrismaUserRepository, PrismaUserDomainMapper, PrismaService],
     }).compile();
 
     sut = module.get<PrismaUserRepository>(PrismaUserRepository);
@@ -30,12 +32,14 @@ describe('PrismaUserRepository', () => {
   describe('create()', () => {
     it('should create a user properly and return response as domain object', async () => {
       const fakeUser = makeFakeUser();
-      const result = await sut.create(fakeUser);
+      const createUserDto: CreateUserDto = prismaUserMapper.toDto(fakeUser);
+
+      const result = await sut.create(createUserDto);
       expect(result).toEqual(
         expect.objectContaining({
           email: fakeUser.email,
           name: fakeUser.name,
-          loginAttempts: fakeUser.loginAttempts,
+          loginAttempts: 0,
           password: fakeUser.password,
           role: fakeUser.role,
         }),
@@ -48,10 +52,13 @@ describe('PrismaUserRepository', () => {
 
   describe('update()', () => {
     it('should update a user properly and return response as domain object', async () => {
+      const fakeUser = makeFakeUser();
       const userToUpdate = await prismaService.user.create({
-        data: makeFakeUser(),
+        data: fakeUser,
       });
-      const changePayload: Partial<UserEntity> = makeFakeUser();
+      const changePayload: UpdateUserDto = prismaUserMapper.toDto(
+        makeFakeUser(),
+      );
 
       const result = await sut.update(userToUpdate.id, changePayload);
 
@@ -59,7 +66,7 @@ describe('PrismaUserRepository', () => {
         expect.objectContaining({
           email: changePayload.email,
           name: changePayload.name,
-          loginAttempts: changePayload.loginAttempts,
+          loginAttempts: fakeUser.loginAttempts,
           password: changePayload.password,
           role: changePayload.role,
         }),

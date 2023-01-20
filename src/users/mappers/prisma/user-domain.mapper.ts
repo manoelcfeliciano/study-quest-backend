@@ -6,7 +6,7 @@ import { UserEntity } from '../../entities/user.entity';
 import { UserDomain } from '../../interfaces/user.interface';
 
 @Injectable()
-export class PrismaUserMapper implements Mapper<UserDomain, UserEntity> {
+export class PrismaUserDomainMapper implements Mapper<UserDomain, UserEntity> {
   toDomain(persistanceObject: UserEntity): UserDomain {
     return {
       id: persistanceObject.id,
@@ -19,6 +19,16 @@ export class PrismaUserMapper implements Mapper<UserDomain, UserEntity> {
       updatedAt: persistanceObject.updatedAt,
     };
   }
+
+  toDto(persistanceObject: UserEntity) {
+    return {
+      name: persistanceObject.name,
+      email: persistanceObject.email,
+      password: persistanceObject.password,
+      role: Role[RoleEnumType[persistanceObject.role]],
+    };
+  }
+
   toPersistence(domainObject: UserDomain): UserEntity {
     return {
       id: domainObject.id,

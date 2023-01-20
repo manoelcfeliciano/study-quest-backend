@@ -7,4 +7,6 @@ export interface UserDomain {
   password: string;
   role: Role;
   loginAttempts: number;
+  createdAt: Date;
+  updatedAt: Date;
 }

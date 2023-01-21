@@ -7,6 +7,6 @@ export type UserEntity = {
   password: string | null;
   role: RoleEnumType;
   loginAttempts: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 };

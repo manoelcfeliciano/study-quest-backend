@@ -8,6 +8,8 @@ export const makeFakeUser = (payload?: Partial<UserEntity>): UserEntity => {
     password: faker.internet.password(),
     loginAttempts: faker.datatype.number(),
     role: faker.helpers.arrayElement(['student', 'teacher']),
+    createdAt: faker.date.past(),
+    updatedAt: faker.date.recent(),
     ...payload,
   };
 };

@@ -71,11 +71,14 @@ describe('UsersService', () => {
         role: Role.student,
       };
 
-      const userRepoSpy = jest.spyOn(userRepo, 'update');
+      const userRepoSpy = jest
+        .spyOn(userRepo, 'update')
+        .mockResolvedValue(newUser as any);
 
-      await sut.update(userToUpdate.id, updateUserDto);
+      const response = await sut.update(userToUpdate.id, updateUserDto);
 
       expect(userRepoSpy).toBeCalledWith(userToUpdate.id, updateUserDto);
+      expect(response).toBe(newUser);
     });
 
     it('should throw if userRepository.update() throws', async () => {
@@ -92,14 +95,18 @@ describe('UsersService', () => {
   describe('get()', () => {
     it('should call userRepository.findOne() with the correct params', async () => {
       const fakeUserId = 'any_user_id';
-      const userRepoSpy = jest.spyOn(userRepo, 'findOne');
+      const fakeUser = 'any_user';
+      const userRepoSpy = jest
+        .spyOn(userRepo, 'findOne')
+        .mockResolvedValue(fakeUser as any);
 
-      await sut.get(fakeUserId);
+      const response = await sut.get(fakeUserId);
 
       expect(userRepoSpy).toBeCalledWith(fakeUserId);
+      expect(response).toBe(fakeUser);
     });
 
-    it('should throw if userRepository.update() throws', async () => {
+    it('should throw if userRepository.findOne() throws', async () => {
       const error = new Error('any_error');
 
       jest.spyOn(userRepo, 'findOne').mockRejectedValue(error);

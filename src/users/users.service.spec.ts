@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock } from '@golevelup/ts-jest';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Role } from './enums/role.enum';
-import { USER_REPOSITORY_KEY } from './repositories/prisma/user-repository.config';
+import { USERS_REPOSITORY_KEY } from './repositories/prisma/users-repository.config';
 import { makeFakeUser } from './test/mocks/entities/fake-user.entity';
 import { UserRepository, UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -16,7 +16,7 @@ describe('UsersService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
-        { provide: USER_REPOSITORY_KEY, useValue: userRepo },
+        { provide: USERS_REPOSITORY_KEY, useValue: userRepo },
       ],
     }).compile();
 

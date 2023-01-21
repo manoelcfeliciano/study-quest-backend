@@ -4,14 +4,14 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserEntity } from './entities/user.entity';
 import { UserDomain } from './interfaces/user.interface';
-import { USER_REPOSITORY_KEY } from './repositories/prisma/user-repository.config';
+import { USERS_REPOSITORY_KEY } from './repositories/prisma/users-repository.config';
 
 export type UserRepository = Repository<UserEntity, UserDomain>;
 
 @Injectable()
 export class UsersService {
   constructor(
-    @Inject(USER_REPOSITORY_KEY)
+    @Inject(USERS_REPOSITORY_KEY)
     private readonly userRepository: UserRepository,
   ) {}
 

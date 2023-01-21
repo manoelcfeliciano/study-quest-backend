@@ -3,7 +3,7 @@ import { PrismaService } from 'src/common/db/prisma/prisma.service';
 import { clear } from 'src/common/db/prisma/test.utils';
 import { PrismaUserDomainMapper } from 'src/users/mappers/prisma/user-domain.mapper';
 import { makeFakeUser } from 'src/users/test/mocks/entities/fake-user.entity';
-import { PrismaUserRepository } from './user.repository';
+import { PrismaUserRepository } from './users.repository';
 import { UpdateUserDto } from '../../dto/update-user.dto';
 import { CreateUserDto } from '../../dto/create-user.dto';
 

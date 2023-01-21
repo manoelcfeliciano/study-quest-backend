@@ -1,21 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from 'src/common/db/prisma/prisma.service';
 import { clear } from 'src/common/db/prisma/test.utils';
-import { PrismaUserDomainMapper } from 'src/users/mappers/prisma/user-domain.mapper';
 import { makeFakeUser } from 'src/users/test/mocks/entities/fake-user.entity';
 import { PrismaUserRepository } from './users.repository';
 import { UpdateUserDto } from '../../dto/update-user.dto';
 import { CreateUserDto } from '../../dto/create-user.dto';
+import { UserPersistenceMapper } from 'src/users/mappers/user-persistence.mapper';
 
 const prismaService = new PrismaService();
-const prismaUserMapper = new PrismaUserDomainMapper();
+const userPersistenceMapper = new UserPersistenceMapper();
 
 describe('PrismaUserRepository', () => {
   let sut: PrismaUserRepository;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [PrismaUserRepository, PrismaUserDomainMapper, PrismaService],
+      providers: [PrismaUserRepository, UserPersistenceMapper, PrismaService],
     }).compile();
 
     sut = module.get<PrismaUserRepository>(PrismaUserRepository);
@@ -32,7 +32,8 @@ describe('PrismaUserRepository', () => {
   describe('create()', () => {
     it('should create a user properly and return response as domain object', async () => {
       const fakeUser = makeFakeUser();
-      const createUserDto: CreateUserDto = prismaUserMapper.toDto(fakeUser);
+      const createUserDto: CreateUserDto =
+        userPersistenceMapper.toInputDto(fakeUser);
 
       const result = await sut.create(createUserDto);
       expect(result).toEqual(
@@ -56,7 +57,7 @@ describe('PrismaUserRepository', () => {
       const userToUpdate = await prismaService.user.create({
         data: fakeUser,
       });
-      const changePayload: UpdateUserDto = prismaUserMapper.toDto(
+      const changePayload: UpdateUserDto = userPersistenceMapper.toInputDto(
         makeFakeUser(),
       );
 

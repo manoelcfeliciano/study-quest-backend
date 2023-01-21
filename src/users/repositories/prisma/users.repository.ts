@@ -3,38 +3,36 @@ import { UserDomain } from '../../interfaces/user.interface';
 import { FindOneByOptions } from 'src/common/db/interfaces/helpers';
 import { PrismaService } from 'src/common/db/prisma/prisma.service';
 import { UserEntity } from 'src/users/entities/user.entity';
-import { PrismaUserDomainMapper } from 'src/users/mappers/prisma/user-domain.mapper';
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from '../../dto/create-user.dto';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
+import { UserPersistenceMapper } from 'src/users/mappers/user-persistence.mapper';
 
 @Injectable()
-export class PrismaUserRepository
-  implements Repository<UserEntity, UserDomain>
-{
+export class PrismaUserRepository implements Repository<UserEntity> {
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly prismaUserMapper: PrismaUserDomainMapper,
+    private readonly userPersistenceMapper: UserPersistenceMapper,
   ) {}
 
-  async create(data: CreateUserDto): Promise<UserDomain> {
+  async create(data: CreateUserDto): Promise<UserEntity> {
     const createdUser = await this.prismaService.user.create({ data });
-    return this.prismaUserMapper.toDomain(createdUser);
+    return this.userPersistenceMapper.toDomain(createdUser);
   }
   async update(id: string, item: UpdateUserDto): Promise<UserDomain> {
     const updatedUser = await this.prismaService.user.update({
       data: item,
       where: { id },
     });
-    return this.prismaUserMapper.toDomain(updatedUser);
+    return this.userPersistenceMapper.toDomain(updatedUser);
   }
   async delete(id: string): Promise<void> {
     await this.prismaService.user.delete({ where: { id } });
   }
 
-  async findOne(id: string): Promise<UserDomain> {
+  async findOne(id: string): Promise<UserEntity> {
     const user = await this.prismaService.user.findUnique({ where: { id } });
-    return this.prismaUserMapper.toDomain(user);
+    return this.userPersistenceMapper.toDomain(user);
   }
 
   async findOneBy(
@@ -43,6 +41,6 @@ export class PrismaUserRepository
     const user = await this.prismaService.user.findUnique({
       where: options,
     });
-    return this.prismaUserMapper.toDomain(user);
+    return this.userPersistenceMapper.toDomain(user);
   }
 }

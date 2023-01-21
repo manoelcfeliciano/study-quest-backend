@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { RoleEnumType } from '@prisma/client';
-import { Mapper } from 'src/common/db/generic.mapper';
+import { PersistenceMapper } from 'src/common/db/persistence.mapper';
 import { Role } from 'src/users/enums/role.enum';
-import { UserEntity } from '../../entities/user.entity';
-import { UserDomain } from '../../interfaces/user.interface';
+import { UserEntity } from '../entities/user.entity';
+import { UserDomain } from '../interfaces/user.interface';
 
 @Injectable()
-export class PrismaUserDomainMapper implements Mapper<UserDomain, UserEntity> {
+export class UserPersistenceMapper
+  implements PersistenceMapper<UserDomain, UserEntity>
+{
   toDomain(persistanceObject: UserEntity): UserDomain {
     return {
       id: persistanceObject.id,
@@ -20,7 +22,7 @@ export class PrismaUserDomainMapper implements Mapper<UserDomain, UserEntity> {
     };
   }
 
-  toDto(persistanceObject: UserEntity) {
+  toInputDto(persistanceObject: UserEntity) {
     return {
       name: persistanceObject.name,
       email: persistanceObject.email,
@@ -29,16 +31,15 @@ export class PrismaUserDomainMapper implements Mapper<UserDomain, UserEntity> {
     };
   }
 
-  toPersistence(domainObject: UserDomain): UserEntity {
+  toResponseDto(persistanceObject: UserEntity) {
     return {
-      id: domainObject.id,
-      email: domainObject.email,
-      name: domainObject.name,
-      password: domainObject.password,
-      loginAttempts: domainObject.loginAttempts,
-      role: RoleEnumType[Role[domainObject.role]],
-      createdAt: domainObject.createdAt,
-      updatedAt: domainObject.updatedAt,
+      id: persistanceObject.id,
+      email: persistanceObject.email,
+      name: persistanceObject.name,
+      loginAttempts: persistanceObject.loginAttempts,
+      role: Role[RoleEnumType[persistanceObject.role]],
+      createdAt: persistanceObject.createdAt.toISOString(),
+      updatedAt: persistanceObject.updatedAt.toISOString(),
     };
   }
 }

@@ -6,21 +6,33 @@ import { USERS_REPOSITORY_KEY } from './repositories/prisma/users-repository.con
 import { makeFakeUser } from './test/mocks/entities/fake-user.entity';
 import { UserRepository, UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserDomainMapper } from './mappers/user-domain.mapper';
+import { UserPersistenceMapper } from './mappers/user-persistence.mapper';
+import { UserResponseDto } from './dto/user-response.dto';
 
 describe('UsersService', () => {
   let sut: UsersService;
   let userRepo: UserRepository;
+  let userPersistenceMapper: UserPersistenceMapper;
+  let userResponseDto: UserResponseDto;
 
   beforeEach(async () => {
     userRepo = createMock<UserRepository>();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
+        UserDomainMapper,
+        UserPersistenceMapper,
+        UserResponseDto,
         { provide: USERS_REPOSITORY_KEY, useValue: userRepo },
       ],
     }).compile();
 
     sut = module.get<UsersService>(UsersService);
+    userPersistenceMapper = module.get<UserPersistenceMapper>(
+      UserPersistenceMapper,
+    );
+    userResponseDto = module.get<UserResponseDto>(UserResponseDto);
   });
 
   it('should be defined', () => {
@@ -37,16 +49,16 @@ describe('UsersService', () => {
         role: Role.student,
       };
 
-      const fakeUserResponse = 'any_user';
-
       const userRepoSpy = jest
         .spyOn(userRepo, 'create')
-        .mockResolvedValue(fakeUserResponse as any);
+        .mockResolvedValue(fakeUser);
 
       const response = await sut.create(createUserDto);
 
       expect(userRepoSpy).toBeCalledWith(createUserDto);
-      expect(response).toBe(fakeUserResponse);
+      expect(response).toStrictEqual(
+        new UserResponseDto(userPersistenceMapper.toResponseDto(fakeUser)),
+      );
     });
 
     it('should throw if userRepository.create() throws', async () => {
@@ -73,12 +85,14 @@ describe('UsersService', () => {
 
       const userRepoSpy = jest
         .spyOn(userRepo, 'update')
-        .mockResolvedValue(newUser as any);
+        .mockResolvedValue(newUser);
 
       const response = await sut.update(userToUpdate.id, updateUserDto);
 
       expect(userRepoSpy).toBeCalledWith(userToUpdate.id, updateUserDto);
-      expect(response).toBe(newUser);
+      expect(response).toStrictEqual(
+        new UserResponseDto(userPersistenceMapper.toResponseDto(newUser)),
+      );
     });
 
     it('should throw if userRepository.update() throws', async () => {
@@ -99,6 +113,14 @@ describe('UsersService', () => {
       const userRepoSpy = jest
         .spyOn(userRepo, 'findOne')
         .mockResolvedValue(fakeUser as any);
+
+      jest
+        .spyOn(userPersistenceMapper, 'toResponseDto')
+        .mockReturnValue(fakeUser as any);
+
+      jest
+        .spyOn(userResponseDto, 'toInstance')
+        .mockReturnValue(fakeUser as any);
 
       const response = await sut.get(fakeUserId);
 

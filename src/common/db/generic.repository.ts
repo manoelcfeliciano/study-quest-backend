@@ -1,9 +1,9 @@
-export abstract class Repository<I, O> {
-  abstract create(data: unknown): Promise<O>;
-  abstract update(id: string, item: unknown): Promise<O>;
+export abstract class Repository<T> {
+  abstract create(data: unknown): Promise<T>;
+  abstract update(id: string, item: unknown): Promise<T>;
   abstract delete(id: string): Promise<void>;
-  abstract findOne(id: string): Promise<O>;
+  abstract findOne(id: string): Promise<T>;
   abstract findOneBy(options: {
-    [P in keyof I]: I[P];
-  }): Promise<O>;
+    [P in keyof T]: T[P];
+  }): Promise<T>;
 }

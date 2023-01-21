@@ -1,9 +1,13 @@
 {
+  "moduleNameMapper": {
+    "^src/(.*)$": "<rootDir>/$1"
+  },
   "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
+  "rootDir": "../src",
   "testEnvironment": "node",
-  "testRegex": ".e2e-spec.ts$",
+  "testRegex": ".*\\.e2e-spec\\.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
-  }
+  },
+  "setupFiles": ["<rootDir>../jest/config/dotenv-config.ts"]
 }

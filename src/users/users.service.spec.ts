@@ -4,20 +4,22 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { Role } from './enums/role.enum';
 import { USERS_REPOSITORY_KEY } from './repositories/prisma/users-repository.config';
 import { makeFakeUser } from './test/mocks/entities/fake-user.entity';
-import { UserRepository, UsersService } from './users.service';
+import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserDomainMapper } from './mappers/user-domain.mapper';
 import { UserPersistenceMapper } from './mappers/user-persistence.mapper';
 import { UserResponseDto } from './dto/user-response.dto';
+import { Repository } from 'src/common/db/generic.repository';
+import { UserEntity } from './entities/user.entity';
 
 describe('UsersService', () => {
   let sut: UsersService;
-  let userRepo: UserRepository;
+  let userRepo: Repository<UserEntity>;
   let userPersistenceMapper: UserPersistenceMapper;
   let userResponseDto: UserResponseDto;
 
   beforeEach(async () => {
-    userRepo = createMock<UserRepository>();
+    userRepo = createMock<Repository<UserEntity>>();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,

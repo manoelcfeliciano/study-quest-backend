@@ -19,7 +19,5 @@ export const makeE2ETestModule = async () => {
 
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
-  await app.init();
-
   return app;
 };

@@ -6,19 +6,22 @@ import { UserResponseDto } from '../dto/user-response.dto';
 import { UserPersistenceMapper } from '../mappers/user-persistence.mapper';
 import { clear } from 'src/common/db/prisma/test.utils';
 import { makeE2ETestModule } from 'src/common/test/factories/test-module-e2e.factory';
+import { makeAuthenticate } from 'src/common/test/factories/authenticate.factory';
 
 const prismaService = new PrismaService();
 const userPersistenceMapper = new UserPersistenceMapper();
+const auth = makeAuthenticate();
 
 describe('Users (e2e)', () => {
   let app: INestApplication;
 
   beforeEach(async () => {
     app = await makeE2ETestModule();
+    await app.init();
   });
 
-  afterAll(() => {
-    clear('postgres');
+  afterAll(async () => {
+    await clear('postgres');
   });
 
   it('/ (POST)', async () => {
@@ -30,19 +33,28 @@ describe('Users (e2e)', () => {
       userPersistenceMapper.toResponseDto(fakeUser),
     ).toPlain();
 
-    request(app.getHttpServer())
+    const { accessToken } = await auth.handle(app);
+
+    await request(app.getHttpServer())
       .post(`/users`)
       .send(createUserDto)
+      .set('authorization', `Bearer ${accessToken}`)
       .expect(201)
-      .expect({
-        ...response,
-        loginAttempts: 0,
-      });
+      .expect((res) =>
+        expect(res.body).toEqual(
+          expect.objectContaining({
+            ...response,
+            loginAttempts: 0,
+          }),
+        ),
+      );
   });
 
-  it('/ (PUT)', async () => {
+  it('/{id} (PUT)', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { loginAttempts, ...createUserPayload } = makeFakeUser();
     const user = await prismaService.user.create({
-      data: makeFakeUser(),
+      data: createUserPayload,
     });
     const updateUserDto = userPersistenceMapper.toInputDto(user);
 
@@ -51,14 +63,21 @@ describe('Users (e2e)', () => {
       userPersistenceMapper.toResponseDto(user),
     ).toPlain();
 
-    request(app.getHttpServer())
-      .put(`/users`)
+    const { accessToken } = await auth.handle(app);
+
+    await request(app.getHttpServer())
+      .put(`/users/${user.id}`)
       .send(updateUserDto)
+      .set('authorization', `Bearer ${accessToken}`)
       .expect(200)
-      .expect({
-        ...response,
-        loginAttempts: 0,
-      });
+      .expect((res) =>
+        expect(res.body).toEqual(
+          expect.objectContaining({
+            ...response,
+            loginAttempts: 0,
+          }),
+        ),
+      );
   });
 
   it('/{id} (GET)', async () => {
@@ -70,8 +89,11 @@ describe('Users (e2e)', () => {
       userPersistenceMapper.toResponseDto(user),
     );
 
+    const { accessToken } = await auth.handle(app);
+
     return request(app.getHttpServer())
       .get(`/users/${user.id}`)
+      .set('authorization', `Bearer ${accessToken}`)
       .expect(200)
       .expect(response.toPlain());
   });
@@ -81,8 +103,11 @@ describe('Users (e2e)', () => {
       data: makeFakeUser(),
     });
 
+    const { accessToken } = await auth.handle(app);
+
     return request(app.getHttpServer())
       .delete(`/users/${user.id}`)
+      .set('authorization', `Bearer ${accessToken}`)
       .expect(200)
       .expect({});
   });

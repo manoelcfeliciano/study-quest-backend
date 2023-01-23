@@ -13,10 +13,11 @@ describe('Authentication (e2e)', () => {
 
   beforeEach(async () => {
     app = await makeE2ETestModule();
+    await app.init();
   });
 
-  afterAll(() => {
-    clear('postgres');
+  afterAll(async () => {
+    await clear('postgres');
   });
 
   describe('/sign-up (POST)', () => {

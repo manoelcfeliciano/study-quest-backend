@@ -9,10 +9,16 @@ import { SignUpDto } from './dto/sign-up.dto';
 import { JwtService } from '@nestjs/jwt';
 import jwtConfig from '../config/jwt.config';
 import { HashingService } from '../../common/hashing/hashing.service';
+import { SignInDto } from './dto/sign-in.dto';
+import { UnauthorizedException } from '@nestjs/common';
 
 const makeRequestInput = () => {
   const fakeToken = 'some-access-token';
   const fakeUser = makeFakeUser();
+  const signInDto: SignInDto = {
+    email: fakeUser.email,
+    password: fakeUser.password,
+  };
   const signUpDto: SignUpDto = {
     name: fakeUser.name,
     email: fakeUser.email,
@@ -20,7 +26,7 @@ const makeRequestInput = () => {
     passwordConfirmation: fakeUser.password,
   };
 
-  return { signUpDto, fakeUser, fakeToken };
+  return { signUpDto, signInDto, fakeUser, fakeToken };
 };
 
 describe('AuthenticationService', () => {
@@ -48,6 +54,64 @@ describe('AuthenticationService', () => {
 
   it('should be defined', () => {
     expect(sut).toBeDefined();
+  });
+
+  describe('signIn()', () => {
+    it('should return the access token properly', async () => {
+      const { signInDto, fakeToken, fakeUser } = makeRequestInput();
+
+      jest.spyOn(jwtService, 'signAsync').mockResolvedValue(fakeToken);
+      jest.spyOn(hashingService, 'compare').mockResolvedValue(true);
+      jest.spyOn(userRepo, 'findOneBy').mockResolvedValue(fakeUser);
+
+      const response = await sut.signIn(signInDto);
+
+      expect(response).toStrictEqual({
+        accessToken: fakeToken,
+      });
+    });
+
+    it('should throw an error if the user is not found', async () => {
+      const { signInDto } = makeRequestInput();
+
+      jest.spyOn(userRepo, 'findOneBy').mockResolvedValue(null);
+
+      await expect(sut.signIn(signInDto)).rejects.toThrowError(
+        new UnauthorizedException('User not found'),
+      );
+    });
+
+    it('should throw an error if the password is not valid', async () => {
+      const { signInDto, fakeUser } = makeRequestInput();
+
+      jest.spyOn(hashingService, 'compare').mockResolvedValue(false);
+      jest.spyOn(userRepo, 'findOneBy').mockResolvedValue(fakeUser);
+
+      await expect(sut.signIn(signInDto)).rejects.toThrowError(
+        new UnauthorizedException('Invalid credentials'),
+      );
+    });
+
+    it('should throw an error if the hashingService.compare() throws', async () => {
+      const { signInDto, fakeUser } = makeRequestInput();
+      const error = new Error();
+
+      jest.spyOn(hashingService, 'compare').mockRejectedValue(error);
+      jest.spyOn(userRepo, 'findOneBy').mockResolvedValue(fakeUser);
+
+      await expect(sut.signIn(signInDto)).rejects.toThrowError(error);
+    });
+
+    it('should throw an error if the jwtService.signAsync() throws', async () => {
+      const { signInDto, fakeUser } = makeRequestInput();
+      const error = new Error();
+
+      jest.spyOn(jwtService, 'signAsync').mockRejectedValue(error);
+      jest.spyOn(hashingService, 'compare').mockResolvedValue(true);
+      jest.spyOn(userRepo, 'findOneBy').mockResolvedValue(fakeUser);
+
+      await expect(sut.signIn(signInDto)).rejects.toThrowError(error);
+    });
   });
 
   describe('signUp()', () => {

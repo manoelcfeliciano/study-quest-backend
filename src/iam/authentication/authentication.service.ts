@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'src/common/db/generic.repository';
@@ -7,6 +7,7 @@ import { UserEntity } from 'src/users/entities/user.entity';
 import { USERS_REPOSITORY_KEY } from 'src/users/repositories/prisma/users-repository.config';
 import jwtConfig from '../config/jwt.config';
 import { SignUpDto } from './dto/sign-up.dto';
+import { SignInDto } from './dto/sign-in.dto';
 
 @Injectable()
 export class AuthenticationService {
@@ -18,6 +19,31 @@ export class AuthenticationService {
     @Inject(USERS_REPOSITORY_KEY)
     private readonly userRepo: Repository<UserEntity>,
   ) {}
+
+  async signIn(signInDto: SignInDto) {
+    const { email, password } = signInDto;
+
+    const user = await this.userRepo.findOneBy({ email });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const isPasswordValid = await this.hashingService.compare(
+      password,
+      user.password,
+    );
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const { accessToken } = await this.generateTokens(user.id);
+
+    return {
+      accessToken,
+    };
+  }
 
   async signUp(signUpDto: SignUpDto) {
     const { name, email, password } = signUpDto;

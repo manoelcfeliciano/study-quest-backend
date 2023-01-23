@@ -7,7 +7,7 @@ import { AuthenticationService } from './authentication/authentication.service';
 import { AuthenticationController } from './authentication/authentication.controller';
 import jwtConfig from './config/jwt.config';
 import { UsersModule } from 'src/users/users.module';
-import { AccessTokenGuard } from './authentication/guards/access-token.guard';
+import { AccessTokenGuard } from './authentication/guards/access-token/access-token.guard';
 
 @Module({
   imports: [

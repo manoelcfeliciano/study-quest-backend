@@ -8,12 +8,14 @@ import { UserDomainMapper } from './mappers/user-domain.mapper';
 import { UserPersistenceMapper } from './mappers/user-persistence.mapper';
 import { UserResponseDto } from './dto/user-response.dto';
 
+const userRepositoryFactory = {
+  provide: USERS_REPOSITORY_KEY,
+  useClass: PrismaUserRepository,
+};
+
 @Module({
   providers: [
-    {
-      provide: USERS_REPOSITORY_KEY,
-      useClass: PrismaUserRepository,
-    },
+    userRepositoryFactory,
     UserDomainMapper,
     UserPersistenceMapper,
     UserResponseDto,
@@ -21,5 +23,6 @@ import { UserResponseDto } from './dto/user-response.dto';
     UsersService,
   ],
   controllers: [UsersController],
+  exports: [userRepositoryFactory],
 })
 export class UsersModule {}

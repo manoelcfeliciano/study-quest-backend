@@ -3,7 +3,6 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { BcryptService } from './common/hashing/adapters/bcrypt/bcrypt.service';
 import { UsersModule } from './users/users.module';
 import { IamModule } from './iam/iam.module';
 
@@ -12,7 +11,6 @@ import { IamModule } from './iam/iam.module';
   controllers: [AppController],
   providers: [
     AppService,
-    BcryptService,
     {
       provide: APP_INTERCEPTOR,
       useClass: ClassSerializerInterceptor,

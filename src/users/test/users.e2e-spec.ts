@@ -1,12 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from '../../app.module';
 import { PrismaService } from 'src/common/db/prisma/prisma.service';
 import { makeFakeUser } from './mocks/entities/fake-user.entity';
 import { UserResponseDto } from '../dto/user-response.dto';
 import { UserPersistenceMapper } from '../mappers/user-persistence.mapper';
 import { clear } from 'src/common/db/prisma/test.utils';
+import { makeE2ETestModule } from 'src/common/test/factories/test-module-e2e.factory';
 
 const prismaService = new PrismaService();
 const userPersistenceMapper = new UserPersistenceMapper();
@@ -15,12 +14,7 @@ describe('Users (e2e)', () => {
   let app: INestApplication;
 
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    await app.init();
+    app = await makeE2ETestModule();
   });
 
   afterAll(() => {

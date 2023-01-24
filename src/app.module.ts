@@ -5,9 +5,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { IamModule } from './iam/iam.module';
+import { RedisModule } from './common/db/redis/redis.module';
 
 @Module({
-  imports: [ConfigModule.forRoot(), UsersModule, IamModule],
+  imports: [ConfigModule.forRoot(), UsersModule, IamModule, RedisModule],
   controllers: [AppController],
   providers: [
     AppService,

@@ -7,6 +7,7 @@ import { USERS_REPOSITORY_KEY } from './repositories/prisma/users-repository.con
 import { UserDomainMapper } from './mappers/user-domain.mapper';
 import { UserPersistenceMapper } from './mappers/user-persistence.mapper';
 import { UserResponseDto } from './dto/user-response.dto';
+import { RedisModule } from 'src/common/db/redis/redis.module';
 
 const userRepositoryFactory = {
   provide: USERS_REPOSITORY_KEY,
@@ -14,6 +15,7 @@ const userRepositoryFactory = {
 };
 
 @Module({
+  imports: [RedisModule],
   providers: [
     userRepositoryFactory,
     UserDomainMapper,

@@ -11,6 +11,7 @@ import jwtConfig from '../config/jwt.config';
 import { HashingService } from '../../common/hashing/hashing.service';
 import { SignInDto } from './dto/sign-in.dto';
 import { UnauthorizedException } from '@nestjs/common';
+import { RefreshTokensIdsStorage } from './refresh-tokens-ids.storage';
 
 const makeRequestInput = () => {
   const fakeAccessToken = 'some-access-token';
@@ -35,17 +36,20 @@ describe('AuthenticationService', () => {
   let userRepo: Repository<UserEntity>;
   let jwtService: JwtService;
   let hashingService: HashingService;
+  let refreshTokensIdsStorage: RefreshTokensIdsStorage;
 
   beforeEach(async () => {
     userRepo = createMock<Repository<UserEntity>>();
     jwtService = createMock<JwtService>();
     hashingService = createMock<HashingService>();
+    refreshTokensIdsStorage = createMock<RefreshTokensIdsStorage>();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         { provide: HashingService, useValue: hashingService },
         { provide: jwtConfig.KEY, useValue: jwtConfig },
         { provide: USERS_REPOSITORY_KEY, useValue: userRepo },
         { provide: JwtService, useValue: jwtService },
+        { provide: RefreshTokensIdsStorage, useValue: refreshTokensIdsStorage },
         AuthenticationService,
       ],
     }).compile();

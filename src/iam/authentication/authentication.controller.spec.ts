@@ -4,6 +4,9 @@ import { AuthenticationController } from './authentication.controller';
 import { AuthenticationService } from './authentication.service';
 import { SignUpDto } from './dto/sign-up.dto';
 import { createMock } from '@golevelup/ts-jest';
+import { RefreshTokensIdsStorage } from './refresh-tokens-ids.storage';
+import { RedisService } from 'src/common/db/redis/redis.service';
+import { RedisModule } from 'src/common/db/redis/redis.module';
 
 const makeRequestInput = () => {
   const fakeUser = makeFakeUser();
@@ -24,8 +27,12 @@ describe('AuthenticationController', () => {
   beforeEach(async () => {
     authService = createMock<AuthenticationService>();
     const module: TestingModule = await Test.createTestingModule({
+      imports: [RedisModule],
       controllers: [AuthenticationController],
-      providers: [{ provide: AuthenticationService, useValue: authService }],
+      providers: [
+        { provide: AuthenticationService, useValue: authService },
+        RefreshTokensIdsStorage,
+      ],
     }).compile();
 
     sut = module.get<AuthenticationController>(AuthenticationController);
@@ -33,6 +40,34 @@ describe('AuthenticationController', () => {
 
   it('should be defined', () => {
     expect(sut).toBeDefined();
+  });
+
+  describe('signIn()', () => {
+    it('should call authService.signIn() with the correct params', async () => {
+      const { signUpDto } = makeRequestInput();
+
+      const signInSpy = jest.spyOn(authService, 'signIn');
+
+      await sut.signIn(signUpDto);
+
+      expect(signInSpy).toHaveBeenCalledWith(signUpDto);
+    });
+
+    it('should return the correct response', async () => {
+      const { signUpDto } = makeRequestInput();
+
+      jest.spyOn(authService, 'signIn').mockResolvedValue({
+        accessToken: 'any_access_token',
+        refreshToken: 'any_refresh_token',
+      });
+
+      const response = await sut.signIn(signUpDto);
+
+      expect(response).toStrictEqual({
+        accessToken: 'any_access_token',
+        refreshToken: 'any_refresh_token',
+      });
+    });
   });
 
   describe('signUp()', () => {

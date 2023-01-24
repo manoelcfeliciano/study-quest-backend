@@ -1,6 +1,7 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { randomUUID } from 'crypto';
 import { Repository } from 'src/common/db/generic.repository';
 import { HashingService } from 'src/common/hashing/hashing.service';
 import { UserEntity } from 'src/users/entities/user.entity';
@@ -8,8 +9,10 @@ import { USERS_REPOSITORY_KEY } from 'src/users/repositories/prisma/users-reposi
 import jwtConfig from '../config/jwt.config';
 import { SignUpDto } from './dto/sign-up.dto';
 import { SignInDto } from './dto/sign-in.dto';
-import { randomUUID } from 'crypto';
-import { UserDomain } from '../../../dist/src/users/interfaces/user.interface';
+import { InvalidatedRefreshTokenError } from '../errors/invalidated-refresh-token.error';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ActiveUserData } from '../interfaces/active-user-data.interface';
+import { RefreshTokensIdsStorage } from './refresh-tokens-ids.storage';
 
 @Injectable()
 export class AuthenticationService {
@@ -20,6 +23,7 @@ export class AuthenticationService {
     private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
     @Inject(USERS_REPOSITORY_KEY)
     private readonly userRepo: Repository<UserEntity>,
+    private readonly refreshTokenIdsStorage: RefreshTokensIdsStorage,
   ) {}
 
   async signIn(signInDto: SignInDto) {
@@ -65,6 +69,39 @@ export class AuthenticationService {
       accessToken,
       refreshToken,
     };
+  }
+
+  async refreshTokens(refreshTokenDto: RefreshTokenDto) {
+    try {
+      const { sub, refreshTokenId } = await this.jwtService.verifyAsync<
+        Pick<ActiveUserData, 'sub'> & { refreshTokenId: string }
+      >(refreshTokenDto.refreshToken, {
+        secret: this.jwtConfiguration.secret,
+        audience: this.jwtConfiguration.audience,
+        issuer: this.jwtConfiguration.issuer,
+      });
+
+      const user = await this.userRepo.findOne(sub);
+
+      const isValid = await this.refreshTokenIdsStorage.validate(
+        user.id,
+        refreshTokenId,
+      );
+
+      if (isValid) {
+        this.refreshTokenIdsStorage.invalidate(user.id);
+      } else {
+        throw new Error('Refresh token is invalid');
+      }
+
+      return this.generateTokens(user);
+    } catch (error) {
+      if (error instanceof InvalidatedRefreshTokenError) {
+        throw new UnauthorizedException('Access denied');
+      }
+
+      throw new UnauthorizedException();
+    }
   }
 
   private generateTokens = async (user: UserEntity) => {

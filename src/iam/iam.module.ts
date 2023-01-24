@@ -10,12 +10,15 @@ import { UsersModule } from 'src/users/users.module';
 import { AccessTokenGuard } from './authentication/guards/access-token/access-token.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthenticationGuard } from './authentication/guards/authentication/authentication.guard';
+import { RefreshTokensIdsStorage } from './authentication/refresh-tokens-ids.storage';
+import { RedisModule } from '../common/db/redis/redis.module';
 
 @Module({
   imports: [
     JwtModule.registerAsync(jwtConfig.asProvider()),
     ConfigModule.forFeature(jwtConfig),
     UsersModule,
+    RedisModule,
   ],
   providers: [
     { provide: HashingService, useClass: BcryptService },
@@ -25,6 +28,7 @@ import { AuthenticationGuard } from './authentication/guards/authentication/auth
     },
     AccessTokenGuard,
     AuthenticationService,
+    RefreshTokensIdsStorage,
   ],
   controllers: [AuthenticationController],
 })

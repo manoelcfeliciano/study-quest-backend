@@ -4,6 +4,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { useContainer } from 'class-validator';
 import { PrismaClientExceptionFilter } from 'nestjs-prisma';
 import { AppModule } from 'src/app.module';
+import { makeAuthenticate } from './authenticate.factory';
+
+const auth = makeAuthenticate();
 
 export const makeE2ETestModule = async () => {
   const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -19,5 +22,5 @@ export const makeE2ETestModule = async () => {
 
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
 
-  return app;
+  return { app, auth };
 };

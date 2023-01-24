@@ -11,8 +11,9 @@ const prismaService = new PrismaService();
 describe('Authentication (e2e)', () => {
   let app: INestApplication;
 
-  beforeEach(async () => {
-    app = await makeE2ETestModule();
+  beforeAll(async () => {
+    const testModule = await makeE2ETestModule();
+    app = testModule.app;
     await app.init();
   });
 

@@ -37,6 +37,7 @@ describe('Authentication (e2e)', () => {
 
       expect(response.body).toEqual({
         accessToken: expect.any(String),
+        refreshToken: expect.any(String),
       });
     });
 

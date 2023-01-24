@@ -89,7 +89,7 @@ export class AuthenticationService {
         secret: this.jwtConfiguration.secret,
         audience: this.jwtConfiguration.audience,
         issuer: this.jwtConfiguration.issuer,
-        expiresIn: this.jwtConfiguration.refreshTokenTtl,
+        expiresIn: expiresIn,
       },
     );
   }

@@ -51,12 +51,14 @@ describe('AuthenticationController', () => {
 
       jest.spyOn(authService, 'signUp').mockResolvedValue({
         accessToken: 'any_access_token',
+        refreshToken: 'any_refresh_token',
       });
 
       const response = await sut.signUp(signUpDto);
 
       expect(response).toStrictEqual({
         accessToken: 'any_access_token',
+        refreshToken: 'any_refresh_token',
       });
     });
 

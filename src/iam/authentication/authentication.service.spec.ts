@@ -13,7 +13,8 @@ import { SignInDto } from './dto/sign-in.dto';
 import { UnauthorizedException } from '@nestjs/common';
 
 const makeRequestInput = () => {
-  const fakeToken = 'some-access-token';
+  const fakeAccessToken = 'some-access-token';
+  const fakeRefreshToken = 'some-refresh-token';
   const fakeUser = makeFakeUser();
   const signInDto: SignInDto = {
     email: fakeUser.email,
@@ -26,7 +27,7 @@ const makeRequestInput = () => {
     passwordConfirmation: fakeUser.password,
   };
 
-  return { signUpDto, signInDto, fakeUser, fakeToken };
+  return { signUpDto, signInDto, fakeUser, fakeAccessToken, fakeRefreshToken };
 };
 
 describe('AuthenticationService', () => {
@@ -58,16 +59,21 @@ describe('AuthenticationService', () => {
 
   describe('signIn()', () => {
     it('should return the access token properly', async () => {
-      const { signInDto, fakeToken, fakeUser } = makeRequestInput();
+      const { signInDto, fakeAccessToken, fakeRefreshToken, fakeUser } =
+        makeRequestInput();
 
-      jest.spyOn(jwtService, 'signAsync').mockResolvedValue(fakeToken);
+      jest
+        .spyOn(jwtService, 'signAsync')
+        .mockResolvedValueOnce(fakeAccessToken)
+        .mockResolvedValueOnce(fakeRefreshToken);
       jest.spyOn(hashingService, 'compare').mockResolvedValue(true);
       jest.spyOn(userRepo, 'findOneBy').mockResolvedValue(fakeUser);
 
       const response = await sut.signIn(signInDto);
 
       expect(response).toStrictEqual({
-        accessToken: fakeToken,
+        accessToken: fakeAccessToken,
+        refreshToken: fakeRefreshToken,
       });
     });
 
@@ -125,9 +131,9 @@ describe('AuthenticationService', () => {
     });
 
     it('should call userRepository.create() with the correct params', async () => {
-      const { signUpDto, fakeToken } = makeRequestInput();
+      const { signUpDto, fakeAccessToken } = makeRequestInput();
 
-      jest.spyOn(jwtService, 'signAsync').mockResolvedValue(fakeToken);
+      jest.spyOn(jwtService, 'signAsync').mockResolvedValue(fakeAccessToken);
       jest.spyOn(hashingService, 'hash').mockResolvedValue('hashed-password');
       const userRepoCreateSpy = jest.spyOn(userRepo, 'create');
 
@@ -141,15 +147,20 @@ describe('AuthenticationService', () => {
     });
 
     it('should return the access token properly', async () => {
-      const { signUpDto, fakeToken, fakeUser } = makeRequestInput();
+      const { signUpDto, fakeAccessToken, fakeRefreshToken, fakeUser } =
+        makeRequestInput();
 
-      jest.spyOn(jwtService, 'signAsync').mockResolvedValue(fakeToken);
+      jest
+        .spyOn(jwtService, 'signAsync')
+        .mockResolvedValueOnce(fakeAccessToken)
+        .mockResolvedValueOnce(fakeRefreshToken);
       jest.spyOn(userRepo, 'create').mockResolvedValue(fakeUser);
 
       const response = await sut.signUp(signUpDto);
 
       expect(response).toStrictEqual({
-        accessToken: fakeToken,
+        accessToken: fakeAccessToken,
+        refreshToken: fakeRefreshToken,
       });
     });
 

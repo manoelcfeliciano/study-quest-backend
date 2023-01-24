@@ -8,6 +8,8 @@ import { USERS_REPOSITORY_KEY } from 'src/users/repositories/prisma/users-reposi
 import jwtConfig from '../config/jwt.config';
 import { SignUpDto } from './dto/sign-up.dto';
 import { SignInDto } from './dto/sign-in.dto';
+import { randomUUID } from 'crypto';
+import { UserDomain } from '../../../dist/src/users/interfaces/user.interface';
 
 @Injectable()
 export class AuthenticationService {
@@ -38,10 +40,11 @@ export class AuthenticationService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const { accessToken } = await this.generateTokens(user.id);
+    const { accessToken, refreshToken } = await this.generateTokens(user);
 
     return {
       accessToken,
+      refreshToken,
     };
   }
 
@@ -56,16 +59,32 @@ export class AuthenticationService {
       password: hashedPassword,
     });
 
-    const { accessToken } = await this.generateTokens(user.id);
+    const { accessToken, refreshToken } = await this.generateTokens(user);
 
     return {
       accessToken,
+      refreshToken,
     };
   }
 
-  private generateTokens = async (userId: string) => {
-    const accessToken = await this.jwtService.signAsync(
-      { sub: userId },
+  private generateTokens = async (user: UserEntity) => {
+    const refreshTokenId = randomUUID();
+
+    const [accessToken, refreshToken] = await Promise.all([
+      this.signToken(user.id, this.jwtConfiguration.accessTokenTtl, {
+        email: user.email,
+      }),
+      this.signToken(user.id, this.jwtConfiguration.refreshTokenTtl, {
+        refreshTokenId,
+      }),
+    ]);
+
+    return { accessToken, refreshToken };
+  };
+
+  private signToken<T>(userId: string, expiresIn: number, payload?: T) {
+    return this.jwtService.signAsync(
+      { sub: userId, ...payload },
       {
         secret: this.jwtConfiguration.secret,
         audience: this.jwtConfiguration.audience,
@@ -73,7 +92,5 @@ export class AuthenticationService {
         expiresIn: this.jwtConfiguration.refreshTokenTtl,
       },
     );
-
-    return { accessToken };
-  };
+  }
 }

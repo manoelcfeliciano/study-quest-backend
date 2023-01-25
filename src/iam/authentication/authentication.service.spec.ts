@@ -6,12 +6,13 @@ import { USERS_REPOSITORY_KEY } from 'src/users/repositories/prisma/users-reposi
 import { makeFakeUser } from 'src/users/test/mocks/entities/fake-user.entity';
 import { AuthenticationService } from './authentication.service';
 import { SignUpDto } from './dto/sign-up.dto';
-import { JwtService } from '@nestjs/jwt';
-import jwtConfig from '../config/jwt.config';
+import { JwtModule, JwtService } from '@nestjs/jwt';
 import { HashingService } from '../../common/hashing/hashing.service';
 import { SignInDto } from './dto/sign-in.dto';
 import { UnauthorizedException } from '@nestjs/common';
 import { RefreshTokensIdsStorage } from './refresh-tokens-ids.storage';
+import jwtConfig from '../config/jwt.config';
+import { ConfigModule } from '@nestjs/config';
 
 const makeRequestInput = () => {
   const fakeAccessToken = 'some-access-token';
@@ -44,9 +45,12 @@ describe('AuthenticationService', () => {
     hashingService = createMock<HashingService>();
     refreshTokensIdsStorage = createMock<RefreshTokensIdsStorage>();
     const module: TestingModule = await Test.createTestingModule({
+      imports: [
+        JwtModule.registerAsync(jwtConfig.asProvider()),
+        ConfigModule.forFeature(jwtConfig),
+      ],
       providers: [
         { provide: HashingService, useValue: hashingService },
-        { provide: jwtConfig.KEY, useValue: jwtConfig },
         { provide: USERS_REPOSITORY_KEY, useValue: userRepo },
         { provide: JwtService, useValue: jwtService },
         { provide: RefreshTokensIdsStorage, useValue: refreshTokensIdsStorage },
@@ -166,6 +170,46 @@ describe('AuthenticationService', () => {
         accessToken: fakeAccessToken,
         refreshToken: fakeRefreshToken,
       });
+    });
+
+    it('should calljwtService.signAsync() with correct params', async () => {
+      const { signUpDto, fakeUser } = makeRequestInput();
+      const jwtConfiguration = jwtConfig();
+
+      jest.spyOn(hashingService, 'hash').mockResolvedValue('hashed-password');
+      jest
+        .spyOn(userRepo, 'create')
+        .mockResolvedValue({ id: 'valid-id', ...fakeUser });
+      const signAsyncSpy = jest.spyOn(jwtService, 'signAsync');
+
+      await sut.signUp(signUpDto);
+
+      expect(signAsyncSpy).toHaveBeenCalledWith(
+        {
+          sub: 'valid-id',
+          email: fakeUser.email,
+          role: fakeUser.role,
+        },
+        {
+          audience: jwtConfiguration.audience,
+          expiresIn: jwtConfiguration.accessTokenTtl,
+          issuer: jwtConfiguration.issuer,
+          secret: jwtConfiguration.secret,
+        },
+      );
+
+      expect(signAsyncSpy).toHaveBeenLastCalledWith(
+        {
+          sub: 'valid-id',
+          refreshTokenId: expect.any(String),
+        },
+        {
+          audience: jwtConfiguration.audience,
+          expiresIn: jwtConfiguration.refreshTokenTtl,
+          issuer: jwtConfiguration.issuer,
+          secret: jwtConfiguration.secret,
+        },
+      );
     });
 
     it('should throw if hashingService.hash() throws', async () => {

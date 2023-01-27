@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { RedisService } from 'src/common/db/redis/redis.service';
-
-export class InvalidatedRefreshTokenError extends Error {}
+import { InvalidatedRefreshTokenError } from '../errors/invalidated-refresh-token.error';
 
 @Injectable()
 export class RefreshTokensIdsStorage {

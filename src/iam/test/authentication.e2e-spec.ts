@@ -5,8 +5,10 @@ import { clear } from 'src/common/db/prisma/test.utils';
 import { PrismaService } from 'src/common/db/prisma/prisma.service';
 import { makeFakeUser } from 'src/users/test/mocks/entities/fake-user.entity';
 import { makeE2ETestModule } from 'src/common/test/factories/test-module-e2e.factory';
+import { BcryptService } from 'src/common/hashing/adapters/bcrypt/bcrypt.service';
 
 const prismaService = new PrismaService();
+const hashingService = new BcryptService();
 
 describe('Authentication (e2e)', () => {
   let app: INestApplication;
@@ -17,8 +19,79 @@ describe('Authentication (e2e)', () => {
     await app.init();
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await clear('postgres');
+  });
+
+  describe('/sign-in (POST)', () => {
+    it('should return 200 when sign in is successful', async () => {
+      const fakeUser = makeFakeUser();
+      await prismaService.user.create({
+        data: {
+          ...fakeUser,
+          password: await hashingService.hash(fakeUser.password),
+        },
+      });
+
+      const signInDto = {
+        email: fakeUser.email,
+        password: fakeUser.password,
+      };
+
+      const response = await request(app.getHttpServer())
+        .post(`/auth/sign-in`)
+        .send(signInDto)
+        .expect(200);
+
+      expect(response.body).toEqual({
+        accessToken: expect.any(String),
+        refreshToken: expect.any(String),
+      });
+    });
+
+    it('should return 401 when user is not found', async () => {
+      const signInDto = {
+        email: 'non_existent@user.com',
+        password: 'any_password',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post(`/auth/sign-in`)
+        .send(signInDto)
+        .expect(401);
+
+      expect(response.body).toEqual({
+        error: 'Unauthorized',
+        message: 'User not found',
+        statusCode: 401,
+      });
+    });
+
+    it('should return 401 when password is not correct', async () => {
+      const fakeUser = makeFakeUser();
+      await prismaService.user.create({
+        data: {
+          ...fakeUser,
+          password: await hashingService.hash(fakeUser.password),
+        },
+      });
+
+      const signInDto = {
+        email: fakeUser.email,
+        password: 'wrong_password',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post(`/auth/sign-in`)
+        .send(signInDto)
+        .expect(401);
+
+      expect(response.body).toEqual({
+        error: 'Unauthorized',
+        message: 'Invalid credentials',
+        statusCode: 401,
+      });
+    });
   });
 
   describe('/sign-up (POST)', () => {

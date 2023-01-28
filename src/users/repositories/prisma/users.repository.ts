@@ -32,6 +32,7 @@ export class PrismaUserRepository implements Repository<UserEntity> {
 
   async findOne(id: string): Promise<UserEntity> {
     const user = await this.prismaService.user.findUnique({ where: { id } });
+    if (!user) return null;
     return this.userPersistenceMapper.toDomain(user);
   }
 
@@ -41,6 +42,7 @@ export class PrismaUserRepository implements Repository<UserEntity> {
     const user = await this.prismaService.user.findUnique({
       where: options,
     });
+    if (!user) return null;
     return this.userPersistenceMapper.toDomain(user);
   }
 }

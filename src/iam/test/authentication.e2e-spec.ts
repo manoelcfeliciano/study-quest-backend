@@ -6,9 +6,12 @@ import { PrismaService } from 'src/common/db/prisma/prisma.service';
 import { makeFakeUser } from 'src/users/test/mocks/entities/fake-user.entity';
 import { makeE2ETestModule } from 'src/common/test/factories/test-module-e2e.factory';
 import { BcryptService } from 'src/common/hashing/adapters/bcrypt/bcrypt.service';
+import { SignInDto } from '../authentication/dto/sign-in.dto';
 
 const prismaService = new PrismaService();
 const hashingService = new BcryptService();
+
+const PASSWORD_MIN_LENGTH = 8;
 
 describe('Authentication (e2e)', () => {
   let app: INestApplication;
@@ -76,7 +79,7 @@ describe('Authentication (e2e)', () => {
         },
       });
 
-      const signInDto = {
+      const signInDto: SignInDto = {
         email: fakeUser.email,
         password: 'wrong_password',
       };
@@ -90,6 +93,42 @@ describe('Authentication (e2e)', () => {
         error: 'Unauthorized',
         message: 'Invalid credentials',
         statusCode: 401,
+      });
+    });
+
+    describe('should return 400 when', () => {
+      describe('email', () => {
+        it('is not a string', async () => {
+          const signInDto: SignInDto = {
+            email: 'invalid_email',
+            password: '12345678',
+          };
+
+          const response = await request(app.getHttpServer())
+            .post(`/auth/sign-in`)
+            .send(signInDto)
+            .expect(400);
+
+          expect(response.body.message[0]).toEqual('email must be an email');
+        });
+      });
+
+      describe('password', () => {
+        it(`must have at least ${PASSWORD_MIN_LENGTH} characters`, async () => {
+          const signInDto: SignInDto = {
+            email: 'valid@email.com',
+            password: '123',
+          };
+
+          const response = await request(app.getHttpServer())
+            .post(`/auth/sign-in`)
+            .send(signInDto)
+            .expect(400);
+
+          expect(response.body.message[0]).toEqual(
+            `password must be longer than or equal to ${PASSWORD_MIN_LENGTH} characters`,
+          );
+        });
       });
     });
   });
@@ -114,7 +153,7 @@ describe('Authentication (e2e)', () => {
       });
     });
 
-    it('should return 500 when sign up is unsuccessful', async () => {
+    it('should return 409 when sign up is unsuccessful', async () => {
       const fakeUser = makeFakeUser();
       const user = await prismaService.user.create({
         data: fakeUser,

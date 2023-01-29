@@ -5,6 +5,9 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { SignInDto } from './dto/sign-in.dto';
 import { SignUpDto } from './dto/sign-up.dto';
 import { AuthType } from './enums/auth-type.enum';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ActiveUser } from './decorators/active-user.decorator';
+import { ActiveUserData } from '../interfaces/active-user-data.interface';
 
 @Auth(AuthType.None)
 @Controller('auth')
@@ -21,6 +24,16 @@ export class AuthenticationController {
   @Post('sign-up')
   signUp(@Body() signUpDto: SignUpDto) {
     return this.authService.signUp(signUpDto);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Auth()
+  @Post('change-password')
+  changePassword(
+    @Body() changePasswordDto: ChangePasswordDto,
+    @ActiveUser() activeUser: ActiveUserData,
+  ) {
+    return this.authService.changePassword(changePasswordDto, activeUser);
   }
 
   @HttpCode(HttpStatus.OK)

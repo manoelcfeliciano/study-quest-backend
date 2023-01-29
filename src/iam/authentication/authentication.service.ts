@@ -13,6 +13,8 @@ import { InvalidatedRefreshTokenError } from '../errors/invalidated-refresh-toke
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ActiveUserData } from '../interfaces/active-user-data.interface';
 import { RefreshTokensIdsStorage } from './refresh-tokens-ids.storage';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ActiveUser } from './decorators/active-user.decorator';
 
 @Injectable()
 export class AuthenticationService {
@@ -69,6 +71,32 @@ export class AuthenticationService {
       accessToken,
       refreshToken,
     };
+  }
+
+  async changePassword(
+    changePasswordDto: ChangePasswordDto,
+    @ActiveUser() activeUser: ActiveUserData,
+  ) {
+    const { oldPassword, newPassword } = changePasswordDto;
+
+    const user = await this.userRepo.findOne(activeUser.sub);
+
+    const isPasswordValid = await this.hashingService.compare(
+      oldPassword,
+      user.password,
+    );
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const hashedPassword = await this.hashingService.hash(newPassword);
+
+    await this.userRepo.update(user.id, {
+      password: hashedPassword,
+    });
+
+    return this.generateTokens(user);
   }
 
   async refreshTokens(refreshTokenDto: RefreshTokenDto) {

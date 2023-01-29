@@ -23,10 +23,14 @@ export class AuthenticationGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const authTypes = this.reflector.getAllAndOverride<AuthType[]>(
+    const reflectorAuthTypes = this.reflector.getAllAndOverride<AuthType[]>(
       AUTH_TYPE_KEY,
       [context.getHandler(), context.getClass()],
-    ) ?? [AuthenticationGuard.defaultAuthType];
+    );
+    const authTypes =
+      reflectorAuthTypes?.length > 0
+        ? reflectorAuthTypes
+        : [AuthenticationGuard.defaultAuthType];
     let error = new UnauthorizedException();
 
     const guards = authTypes.map((authType) => this.authTypeGuardMap[authType]);

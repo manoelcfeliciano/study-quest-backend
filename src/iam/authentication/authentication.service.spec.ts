@@ -1,18 +1,21 @@
 import { createMock } from '@golevelup/ts-jest';
 import { Test, TestingModule } from '@nestjs/testing';
+import { UnauthorizedException } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { JwtModule, JwtService } from '@nestjs/jwt';
 import { Repository } from 'src/common/db/generic.repository';
 import { UserEntity } from 'src/users/entities/user.entity';
 import { USERS_REPOSITORY_KEY } from 'src/users/repositories/prisma/users-repository.config';
 import { makeFakeUser } from 'src/users/test/mocks/entities/fake-user.entity';
 import { AuthenticationService } from './authentication.service';
 import { SignUpDto } from './dto/sign-up.dto';
-import { JwtModule, JwtService } from '@nestjs/jwt';
 import { HashingService } from '../../common/hashing/hashing.service';
 import { SignInDto } from './dto/sign-in.dto';
-import { UnauthorizedException } from '@nestjs/common';
 import { RefreshTokensIdsStorage } from './refresh-tokens-ids.storage';
 import jwtConfig from '../config/jwt.config';
-import { ConfigModule } from '@nestjs/config';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { UserPersistenceMapper } from '../../users/mappers/user-persistence.mapper';
+import { randomUUID } from 'crypto';
 
 const makeRequestInput = () => {
   const fakeAccessToken = 'some-access-token';
@@ -28,8 +31,28 @@ const makeRequestInput = () => {
     password: fakeUser.password,
     passwordConfirmation: fakeUser.password,
   };
+  const changePasswordDto: ChangePasswordDto = {
+    oldPassword: fakeUser.password,
+    newPassword: 'new-password',
+  };
 
-  return { signUpDto, signInDto, fakeUser, fakeAccessToken, fakeRefreshToken };
+  const userPersistenceMapper = new UserPersistenceMapper();
+  const userInputDto = userPersistenceMapper.toInputDto(fakeUser);
+  const activeUser = {
+    email: userInputDto.email,
+    role: userInputDto.role,
+    sub: randomUUID(),
+  };
+
+  return {
+    signUpDto,
+    signInDto,
+    changePasswordDto,
+    fakeUser,
+    activeUser,
+    fakeAccessToken,
+    fakeRefreshToken,
+  };
 };
 
 describe('AuthenticationService', () => {
@@ -241,6 +264,50 @@ describe('AuthenticationService', () => {
       jest.spyOn(jwtService, 'signAsync').mockRejectedValue(error);
 
       await expect(sut.signUp(signUpDto)).rejects.toThrow(error);
+    });
+  });
+
+  describe('changePassword()', () => {
+    it('should call hashingService.compare() with the correct params', async () => {
+      const { changePasswordDto, activeUser, fakeUser } = makeRequestInput();
+      const compareSpy = jest.spyOn(hashingService, 'compare');
+
+      jest.spyOn(userRepo, 'findOneBy').mockResolvedValue(fakeUser);
+
+      await sut.changePassword(changePasswordDto, {
+        email: activeUser.email,
+        role: activeUser.role,
+        sub: fakeUser.id,
+      });
+
+      expect(compareSpy).toHaveBeenCalledWith(
+        changePasswordDto.oldPassword,
+        hashingService.hash(fakeUser.password),
+      );
+    });
+
+    it('should change password properly if the current password is correct', async () => {
+      const { changePasswordDto, activeUser, fakeUser } = makeRequestInput();
+
+      jest.spyOn(hashingService, 'compare').mockResolvedValue(true);
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(fakeUser);
+      const updateSpy = jest.spyOn(userRepo, 'update');
+
+      await sut.changePassword(changePasswordDto, activeUser);
+
+      expect(updateSpy).toHaveBeenCalledWith(fakeUser.id, {
+        password: changePasswordDto.newPassword,
+      });
+    });
+
+    it('should throw if the current password is incorrect', async () => {
+      const { changePasswordDto, activeUser } = makeRequestInput();
+
+      jest.spyOn(hashingService, 'compare').mockResolvedValue(false);
+
+      await expect(
+        sut.changePassword(changePasswordDto, activeUser),
+      ).rejects.toThrow(new UnauthorizedException('Invalid credentials'));
     });
   });
 });

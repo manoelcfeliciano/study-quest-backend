@@ -9,6 +9,21 @@ import { BcryptService } from 'src/common/hashing/adapters/bcrypt/bcrypt.service
 import { SignInDto } from '../authentication/dto/sign-in.dto';
 import { ChangePasswordDto } from '../authentication/dto/change-password.dto';
 import { Authenticate } from 'src/common/test/helpers/authenticate';
+import { SocialSignInDto } from '../authentication/dto/social-sign-in.dto';
+
+jest.mock('google-auth-library', () => {
+  return {
+    OAuth2Client: class Mock {
+      verifyIdToken = jest.fn().mockResolvedValue({
+        getPayload: jest.fn().mockReturnValue({
+          sub: 'any_id',
+          name: 'any_name',
+          email: 'any@email.com',
+        }),
+      });
+    },
+  };
+});
 
 const prismaService = new PrismaService();
 const hashingService = new BcryptService();
@@ -30,7 +45,7 @@ describe('Authentication (e2e)', () => {
     await clear('postgres');
   });
 
-  describe('/sign-in (POST)', () => {
+  describe('/auth/sign-in (POST)', () => {
     it('should return 200 when sign in is successful', async () => {
       const fakeUser = makeFakeUser();
       await prismaService.user.create({
@@ -137,7 +152,7 @@ describe('Authentication (e2e)', () => {
     });
   });
 
-  describe('/change-password (POST)', () => {
+  describe('/auth/change-password (POST)', () => {
     it('should return 200 when change password is successful', async () => {
       const { accessToken, authUser } = await auth.handle(app);
 
@@ -218,7 +233,7 @@ describe('Authentication (e2e)', () => {
     });
   });
 
-  describe('/sign-up (POST)', () => {
+  describe('/auth/sign-up (POST)', () => {
     it('should return 201 when sign up is successful', async () => {
       const signUpDto: SignUpDto = {
         name: 'any_name',
@@ -365,6 +380,43 @@ describe('Authentication (e2e)', () => {
         expect(response.body.message[0]).toEqual(
           'password must be longer than or equal to 8 characters',
         );
+      });
+    });
+  });
+
+  describe('/auth/google (POST)', () => {
+    it('should return 201 when sign up is successful', async () => {
+      const socialSignInDto: SocialSignInDto = {
+        accessToken: 'valid_access_token',
+      };
+
+      const response = await request(app.getHttpServer())
+        .post(`/auth/google`)
+        .send(socialSignInDto)
+        .expect(201);
+
+      expect(response.body).toEqual({
+        accessToken: expect.any(String),
+        refreshToken: expect.any(String),
+      });
+    });
+
+    describe('should return 400 when', () => {
+      describe('accessToken', () => {
+        it('is empty', async () => {
+          const socialSignInDto: SocialSignInDto = {
+            accessToken: '',
+          };
+
+          const response = await request(app.getHttpServer())
+            .post(`/auth/google`)
+            .send(socialSignInDto)
+            .expect(400);
+
+          expect(response.body.message[0]).toEqual(
+            'accessToken should not be empty',
+          );
+        });
       });
     });
   });

@@ -17,6 +17,7 @@ export class UserPersistenceMapper
       password: persistanceObject.password,
       loginAttempts: persistanceObject.loginAttempts,
       role: Role[RoleEnumType[persistanceObject.role]],
+      googleId: persistanceObject.googleId,
       createdAt: persistanceObject.createdAt,
       updatedAt: persistanceObject.updatedAt,
     };

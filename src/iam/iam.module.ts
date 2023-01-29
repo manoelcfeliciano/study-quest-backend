@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { BcryptService } from 'src/common/hashing/adapters/bcrypt/bcrypt.service';
 import { HashingService } from 'src/common/hashing/hashing.service';
@@ -12,6 +12,10 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthenticationGuard } from './authentication/guards/authentication/authentication.guard';
 import { RefreshTokensIdsStorage } from './authentication/refresh-tokens-ids.storage';
 import { RedisModule } from '../common/db/redis/redis.module';
+import { GoogleAuthenticationService } from './authentication/social/google-authentication.service';
+import { GoogleAuthenticationController } from './authentication/social/google-authentication.controller';
+import { OAUTH2_CLIENT_KEY } from './iam.constants';
+import { OAuth2Client } from 'google-auth-library';
 
 @Module({
   imports: [
@@ -26,10 +30,20 @@ import { RedisModule } from '../common/db/redis/redis.module';
       provide: APP_GUARD,
       useClass: AuthenticationGuard,
     },
+    {
+      provide: OAUTH2_CLIENT_KEY,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const clientId = configService.get('GOOGLE_CLIENT_ID');
+        const clientSecret = configService.get('GOOGLE_CLIENT_SECRET');
+        return new OAuth2Client(clientId, clientSecret);
+      },
+    },
     AccessTokenGuard,
     AuthenticationService,
     RefreshTokensIdsStorage,
+    GoogleAuthenticationService,
   ],
-  controllers: [AuthenticationController],
+  controllers: [AuthenticationController, GoogleAuthenticationController],
 })
 export class IamModule {}

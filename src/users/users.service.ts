@@ -7,13 +7,11 @@ import { UserEntity } from './entities/user.entity';
 import { UserPersistenceMapper } from './mappers/user-persistence.mapper';
 import { USERS_REPOSITORY_KEY } from './repositories/prisma/users-repository.config';
 
-export type UserRepository = Repository<UserEntity>;
-
 @Injectable()
 export class UsersService {
   constructor(
     @Inject(USERS_REPOSITORY_KEY)
-    private readonly userRepository: UserRepository,
+    private readonly userRepository: Repository<UserEntity>,
     private readonly userPersistenceMapper: UserPersistenceMapper,
     private readonly userResponseDto: UserResponseDto,
   ) {}

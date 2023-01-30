@@ -36,6 +36,7 @@ export class UserDomainMapper implements DomainMapper<UserDomain, UserEntity> {
       password: domainObject.password,
       loginAttempts: domainObject.loginAttempts,
       role: RoleEnumType[Role[domainObject.role]],
+      googleId: domainObject.googleId,
       createdAt: domainObject.createdAt,
       updatedAt: domainObject.updatedAt,
     };

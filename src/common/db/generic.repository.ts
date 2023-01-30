@@ -3,7 +3,9 @@ export abstract class Repository<T> {
   abstract update(id: string, item: unknown): Promise<T>;
   abstract delete(id: string): Promise<void>;
   abstract findOne(id: string): Promise<T>;
-  abstract findOneBy(options: {
-    [P in keyof T]: T[P];
-  }): Promise<T>;
+  abstract findOneBy(
+    options: Partial<{
+      [P in keyof T]: T[P];
+    }>,
+  ): Promise<T>;
 }

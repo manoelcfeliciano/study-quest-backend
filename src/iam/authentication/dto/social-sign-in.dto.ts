@@ -1,4 +1,6 @@
+import { IsNotEmpty } from 'class-validator';
+
 export class SocialSignInDto {
-  provider: string;
+  @IsNotEmpty()
   accessToken: string;
 }

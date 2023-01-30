@@ -7,6 +7,7 @@ export type UserEntity = {
   password: string | null;
   role: RoleEnumType;
   loginAttempts: number;
+  googleId: string | null;
   createdAt: Date;
   updatedAt: Date;
 };

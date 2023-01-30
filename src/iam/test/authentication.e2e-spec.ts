@@ -158,7 +158,7 @@ describe('Authentication (e2e)', () => {
 
       const changePasswordDto: ChangePasswordDto = {
         oldPassword: authUser.password,
-        newPassword: 'new_password',
+        newPassword: 'NewPassword123!',
       };
       const response = await request(app.getHttpServer())
         .post(`/auth/change-password`)
@@ -175,7 +175,7 @@ describe('Authentication (e2e)', () => {
     it('should return 401 when user is not authenticated', async () => {
       const changePasswordDto: ChangePasswordDto = {
         oldPassword: 'old_password',
-        newPassword: 'new_password',
+        newPassword: 'NewPassword123!',
       };
 
       const response = await request(app.getHttpServer())
@@ -194,7 +194,7 @@ describe('Authentication (e2e)', () => {
 
       const changePasswordDto: ChangePasswordDto = {
         oldPassword: 'wrong_password',
-        newPassword: 'new_password',
+        newPassword: 'NewPassword123!',
       };
 
       const response = await request(app.getHttpServer())
@@ -212,22 +212,42 @@ describe('Authentication (e2e)', () => {
 
     describe('should return 400 when', () => {
       describe('newPassword', () => {
-        it(`have less than ${PASSWORD_MIN_LENGTH} characters`, async () => {
-          const { accessToken, authUser } = await auth.handle(app);
-          const changePassword: ChangePasswordDto = {
-            oldPassword: authUser.password,
-            newPassword: '1234',
-          };
+        describe('is not a strong password', () => {
+          it(`have less than ${PASSWORD_MIN_LENGTH} characters`, async () => {
+            const { accessToken, authUser } = await auth.handle(app);
+            const changePassword: ChangePasswordDto = {
+              oldPassword: authUser.password,
+              newPassword: '1234',
+            };
 
-          const response = await request(app.getHttpServer())
-            .post(`/auth/change-password`)
-            .send(changePassword)
-            .set('authorization', `Bearer ${accessToken}`)
-            .expect(400);
+            const response = await request(app.getHttpServer())
+              .post(`/auth/change-password`)
+              .send(changePassword)
+              .set('authorization', `Bearer ${accessToken}`)
+              .expect(400);
 
-          expect(response.body.message[0]).toEqual(
-            `newPassword must be longer than or equal to ${PASSWORD_MIN_LENGTH} characters`,
-          );
+            expect(response.body.message[0]).toEqual(
+              `newPassword is not strong enough`,
+            );
+          });
+
+          it('have no uppercase letter', async () => {
+            const { accessToken, authUser } = await auth.handle(app);
+            const changePassword: ChangePasswordDto = {
+              oldPassword: authUser.password,
+              newPassword: 'weak_password',
+            };
+
+            const response = await request(app.getHttpServer())
+              .post(`/auth/change-password`)
+              .send(changePassword)
+              .set('authorization', `Bearer ${accessToken}`)
+              .expect(400);
+
+            expect(response.body.message[0]).toEqual(
+              'newPassword is not strong enough',
+            );
+          });
         });
       });
     });

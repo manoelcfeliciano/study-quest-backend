@@ -1,4 +1,9 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
@@ -80,6 +85,12 @@ export class AuthenticationService {
     const { oldPassword, newPassword } = changePasswordDto;
 
     const user = await this.userRepo.findOne(activeUser.sub);
+
+    if (oldPassword === newPassword) {
+      throw new BadRequestException(
+        'New password cannot be the same as the old one',
+      );
+    }
 
     const isPasswordValid = await this.hashingService.compare(
       oldPassword,

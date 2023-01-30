@@ -1,6 +1,6 @@
 import { createMock } from '@golevelup/ts-jest';
 import { Test, TestingModule } from '@nestjs/testing';
-import { UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { Repository } from 'src/common/db/generic.repository';
@@ -298,6 +298,26 @@ describe('AuthenticationService', () => {
       expect(updateSpy).toHaveBeenCalledWith(fakeUser.id, {
         password: changePasswordDto.newPassword,
       });
+    });
+
+    it('should throw if the new password is equal to the old password', async () => {
+      const { changePasswordDto, activeUser, fakeUser } = makeRequestInput();
+
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(fakeUser);
+
+      const promise = sut.changePassword(
+        {
+          ...changePasswordDto,
+          oldPassword: changePasswordDto.newPassword,
+        },
+        activeUser,
+      );
+
+      await expect(promise).rejects.toThrow(
+        new BadRequestException(
+          'New password cannot be the same as the old one',
+        ),
+      );
     });
 
     it('should throw if the current password is incorrect', async () => {
